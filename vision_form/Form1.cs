@@ -136,6 +136,13 @@ namespace vision_form
                     {
 
                     }
+                    else if (CurrentNode.Text == "Calib9PointAbs")
+                    {
+                        int sel_num = treeView1.SelectedNode.Index;
+                        Calib9PointAbs_form Calib_form = new Calib9PointAbs_form((UnitCalib9PointAbs)Vision_step[sel_num], image_show);
+                        Calib_form.ShowDialog();
+                        Calib_form.Dispose();
+                    }
                     else
                     {
                         treeView1.SelectedNode = CurrentNode;//选中这个节点
@@ -200,6 +207,23 @@ namespace vision_form
                 step_path = saveFileDialog1.FileName;
 
             }
+
+            for (int i = 0; i < 20; i++)
+            {
+                if (Vision_step[i] == null)
+                {
+                    //可以把最终的结果show出来。
+                    //if (i > 0)
+                    //{
+                    //    show_Result(Vision_step[i - 1]);
+                    //}
+                    break;
+                }
+                //Vision_step[i].process(Hwin, image_show);
+                Vision_step[i].SaveConfig();
+                str_parm[i] = Vision_step[i].all_parm;
+            }
+
             TreeXml.SaveXml(treeView1, step_path, str_parm);
         }
 
@@ -282,7 +306,15 @@ namespace vision_form
                             MessageBox.Show("找交点，载入参数错误");
                         }
                     }
-                        
+                    if (node.Text == "Calib9PointAbs")
+                    {
+                        Vision_step[tree_num] = new UnitCalib9PointAbs(Vision_step); //str_parm
+                        if (!Vision_step[tree_num].LoadConfig(str_parm[tree_num]))
+                        {
+                            MessageBox.Show("9点标定，载入参数错误");
+                        }
+                    }
+
                 }
                 while (ie.MoveNext())
                 {
@@ -330,6 +362,14 @@ namespace vision_form
                         if (!Vision_step[i].LoadConfig(str_parm[i]))
                         {
                             MessageBox.Show("找交点，载入参数错误");
+                        }
+                    }
+                    if (str_name[i] == "Calib9PointAbs")
+                    {
+                        Vision_step[i] = new UnitCalib9PointAbs(Vision_step); //str_parm
+                        if (!Vision_step[i].LoadConfig(str_parm[i]))
+                        {
+                            MessageBox.Show("9点标定，载入参数错误");
                         }
                     }
                     if(str_name[i] == null)
@@ -413,11 +453,30 @@ namespace vision_form
                 treeView1.SelectedNode.Nodes.Add("in_line2_row2".Trim());
                 treeView1.SelectedNode.Nodes.Add("in_line2_col2".Trim());
                 treeView1.SelectedNode.Nodes.Add("out_row".Trim());
-                treeView1.SelectedNode.Nodes.Add("out_col".Trim()); ;
+                treeView1.SelectedNode.Nodes.Add("out_col".Trim());
                 textBox1.Text = "";
                 Vision_step[step_num] = new UnitIntersectionLL(Vision_step);
             }
+            if (comboBox1.Text == "Calib9PointAbs")
+            {
+                tmp = new TreeNode(textBox1.Text);
+                treeView1.SelectedNode = tmp;
+                treeView1.Nodes.Add(tmp);
 
+                //treeView1.SelectedNode.Nodes.Add("in_point_index".Trim());
+                treeView1.SelectedNode.Nodes.Add("in_pixel_column".Trim());
+                treeView1.SelectedNode.Nodes.Add("in_pixel_row".Trim());
+                treeView1.SelectedNode.Nodes.Add("in_world_x".Trim());
+                treeView1.SelectedNode.Nodes.Add("in_world_y".Trim());
+
+                treeView1.SelectedNode.Nodes.Add("out_offset_x".Trim());
+                treeView1.SelectedNode.Nodes.Add("out_offset_y".Trim());
+                treeView1.SelectedNode.Nodes.Add("out_offset_angle".Trim());
+                treeView1.SelectedNode.Nodes.Add("out_calib_result".Trim());
+
+                textBox1.Text = "";
+                Vision_step[step_num] = new UnitCalib9PointAbs(Vision_step);
+            }
             //添加根节点
             //treeView1.Nodes.Add(textBox1.Text.Trim());
             
