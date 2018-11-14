@@ -143,6 +143,20 @@ namespace vision_form
                         Calib_form.ShowDialog();
                         Calib_form.Dispose();
                     }
+                    else if (CurrentNode.Text == "Random")
+                    {
+                        int sel_num = treeView1.SelectedNode.Index;
+                        Random_form rand_form = new Random_form((UnitRandom)Vision_step[sel_num], image_show);
+                        rand_form.ShowDialog();
+                        rand_form.Dispose();
+                    }
+                    else if (CurrentNode.Text == "ImageFiles")
+                    {
+                        int sel_num = treeView1.SelectedNode.Index;
+                        ImageFiles_form files_form = new ImageFiles_form((UnitImageFiles)Vision_step[sel_num], image_show);
+                        files_form.ShowDialog();
+                        files_form.Dispose();
+                    }
                     else
                     {
                         treeView1.SelectedNode = CurrentNode;//选中这个节点
@@ -314,7 +328,22 @@ namespace vision_form
                             MessageBox.Show("9点标定，载入参数错误");
                         }
                     }
-
+                    if (node.Text == "Random")
+                    {
+                        Vision_step[tree_num] = new UnitRandom(Vision_step); //str_parm
+                        if (!Vision_step[tree_num].LoadConfig(str_parm[tree_num]))
+                        {
+                            MessageBox.Show("随机数据，载入参数错误");
+                        }
+                    }
+                    if (node.Text == "ImageFiles")
+                    {
+                        Vision_step[tree_num] = new UnitImageFiles(Vision_step); //str_parm
+                        if (!Vision_step[tree_num].LoadConfig(str_parm[tree_num]))
+                        {
+                            MessageBox.Show("图像列表，载入参数错误");
+                        }
+                    }
                 }
                 while (ie.MoveNext())
                 {
@@ -372,7 +401,23 @@ namespace vision_form
                             MessageBox.Show("9点标定，载入参数错误");
                         }
                     }
-                    if(str_name[i] == null)
+                    if (str_name[i] == "Random")
+                    {
+                        Vision_step[i] = new UnitCalib9PointAbs(Vision_step); //str_parm
+                        if (!Vision_step[i].LoadConfig(str_parm[i]))
+                        {
+                            MessageBox.Show("随机数据，载入参数错误");
+                        }
+                    }
+                    if (str_name[i] == "ImageFiles")
+                    {
+                        Vision_step[i] = new UnitCalib9PointAbs(Vision_step); //str_parm
+                        if (!Vision_step[i].LoadConfig(str_parm[i]))
+                        {
+                            MessageBox.Show("图像列表，载入参数错误");
+                        }
+                    }
+                    if (str_name[i] == null)
                     {
                         break;
                     }
@@ -477,10 +522,33 @@ namespace vision_form
                 textBox1.Text = "";
                 Vision_step[step_num] = new UnitCalib9PointAbs(Vision_step);
             }
+            if (comboBox1.Text == "Random")
+            {
+                tmp = new TreeNode(textBox1.Text);
+                treeView1.SelectedNode = tmp;
+                treeView1.Nodes.Add(tmp);
+
+                treeView1.SelectedNode.Nodes.Add("out_row".Trim());
+                treeView1.SelectedNode.Nodes.Add("out_column".Trim());
+
+                textBox1.Text = "";
+                Vision_step[step_num] = new UnitRandom(Vision_step);
+            }
+            if (comboBox1.Text == "ImageFiles")
+            {
+                tmp = new TreeNode(textBox1.Text);
+                treeView1.SelectedNode = tmp;
+                treeView1.Nodes.Add(tmp);
+
+                treeView1.SelectedNode.Nodes.Add("out_image_path".Trim());
+
+                textBox1.Text = "";
+                Vision_step[step_num] = new UnitImageFiles(Vision_step);
+            }
             //添加根节点
             //treeView1.Nodes.Add(textBox1.Text.Trim());
-            
-            
+
+
         }
         private void comboBox1_SelectedIndexChanged(object sender, EventArgs e)
         {

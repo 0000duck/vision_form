@@ -52,10 +52,11 @@
             this.label2 = new System.Windows.Forms.Label();
             this.label1 = new System.Windows.Forms.Label();
             this.tabPage3 = new System.Windows.Forms.TabPage();
-            this.labHomMat2D = new System.Windows.Forms.Label();
-            this.labRotateCenter = new System.Windows.Forms.Label();
             this.labMaxDeviation = new System.Windows.Forms.Label();
+            this.labRotateCenter = new System.Windows.Forms.Label();
+            this.labHomMat2D = new System.Windows.Forms.Label();
             this.btnTest = new System.Windows.Forms.Button();
+            this.labDistMax = new System.Windows.Forms.Label();
             ((System.ComponentModel.ISupportInitialize)(this.pictureBox1)).BeginInit();
             this.tabControl1.SuspendLayout();
             this.tabPage1.SuspendLayout();
@@ -292,6 +293,7 @@
             // tabPage3
             // 
             this.tabPage3.Controls.Add(this.labMaxDeviation);
+            this.tabPage3.Controls.Add(this.labDistMax);
             this.tabPage3.Controls.Add(this.labRotateCenter);
             this.tabPage3.Controls.Add(this.labHomMat2D);
             this.tabPage3.Location = new System.Drawing.Point(4, 22);
@@ -301,15 +303,15 @@
             this.tabPage3.Text = "结果";
             this.tabPage3.UseVisualStyleBackColor = true;
             // 
-            // labHomMat2D
+            // labMaxDeviation
             // 
-            this.labHomMat2D.AutoSize = true;
-            this.labHomMat2D.Font = new System.Drawing.Font("微软雅黑", 9F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(134)));
-            this.labHomMat2D.Location = new System.Drawing.Point(24, 30);
-            this.labHomMat2D.Name = "labHomMat2D";
-            this.labHomMat2D.Size = new System.Drawing.Size(87, 68);
-            this.labHomMat2D.TabIndex = 0;
-            this.labHomMat2D.Text = "HomMat2D：\r\n0  0  0\r\n0  0  0\r\n0  0  1";
+            this.labMaxDeviation.AutoSize = true;
+            this.labMaxDeviation.Font = new System.Drawing.Font("微软雅黑", 9F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(134)));
+            this.labMaxDeviation.Location = new System.Drawing.Point(25, 128);
+            this.labMaxDeviation.Name = "labMaxDeviation";
+            this.labMaxDeviation.Size = new System.Drawing.Size(97, 17);
+            this.labMaxDeviation.TabIndex = 2;
+            this.labMaxDeviation.Text = "最大偏差：(0 ,0)";
             // 
             // labRotateCenter
             // 
@@ -321,15 +323,15 @@
             this.labRotateCenter.TabIndex = 1;
             this.labRotateCenter.Text = "旋转中心：(0, 0)";
             // 
-            // labMaxDeviation
+            // labHomMat2D
             // 
-            this.labMaxDeviation.AutoSize = true;
-            this.labMaxDeviation.Font = new System.Drawing.Font("微软雅黑", 9F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(134)));
-            this.labMaxDeviation.Location = new System.Drawing.Point(25, 128);
-            this.labMaxDeviation.Name = "labMaxDeviation";
-            this.labMaxDeviation.Size = new System.Drawing.Size(97, 17);
-            this.labMaxDeviation.TabIndex = 2;
-            this.labMaxDeviation.Text = "最大偏差：(0 ,0)";
+            this.labHomMat2D.AutoSize = true;
+            this.labHomMat2D.Font = new System.Drawing.Font("微软雅黑", 9F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(134)));
+            this.labHomMat2D.Location = new System.Drawing.Point(24, 30);
+            this.labHomMat2D.Name = "labHomMat2D";
+            this.labHomMat2D.Size = new System.Drawing.Size(87, 68);
+            this.labHomMat2D.TabIndex = 0;
+            this.labHomMat2D.Text = "HomMat2D：\r\n0  0  0\r\n0  0  0\r\n0  0  1";
             // 
             // btnTest
             // 
@@ -342,6 +344,16 @@
             this.btnTest.Text = "测试数据";
             this.btnTest.UseVisualStyleBackColor = true;
             this.btnTest.Click += new System.EventHandler(this.btnTest_Click);
+            // 
+            // labDistMax
+            // 
+            this.labDistMax.AutoSize = true;
+            this.labDistMax.Font = new System.Drawing.Font("微软雅黑", 9F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(134)));
+            this.labDistMax.Location = new System.Drawing.Point(25, 214);
+            this.labDistMax.Name = "labDistMax";
+            this.labDistMax.Size = new System.Drawing.Size(75, 17);
+            this.labDistMax.TabIndex = 1;
+            this.labDistMax.Text = "半径偏差：0";
             // 
             // Calib9PointAbs_form
             // 
@@ -399,5 +411,6 @@
         private System.Windows.Forms.Label labMaxDeviation;
         private System.Windows.Forms.Label labRotateCenter;
         private System.Windows.Forms.Button btnTest;
+        private System.Windows.Forms.Label labDistMax;
     }
 }

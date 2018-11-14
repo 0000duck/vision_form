@@ -17,17 +17,21 @@ namespace vision_form
         public HTuple in_world_x = new HTuple();
         public HTuple in_world_y = new HTuple();
 
-        public HTuple HomMat2D = new HTuple(0, 0, 0, 0, 0, 0);//矩阵
-        public HTuple CenterRow = 0;//旋转中心
-        public HTuple CenterColumn = 0;
+        public HTuple HomMat2D = new HTuple(1.0, 0.0, 0.0, 0.0, 1.0, 0.0);//矩阵
+        public HTuple CenterRow = 0D;//旋转中心
+        public HTuple CenterColumn = 0D;
 
-        public HTuple XMaxDeviation = 0;
-        public HTuple YMaxDeviation = 0;
+        public HTuple XMaxDeviation = 0D;
+        public HTuple YMaxDeviation = 0D;
 
+        // 通过旋转中心计算出的点到圆上的距离
+        public HTuple DistanceMin = 0;
+        public HTuple DistanceMax = 0;
 
         public int PointCount = 0;
 
         public string CalibDataFileName = "CalibData.cal";
+
 
 
         //public string CalibDataFileName = @"C:\Users\Administrator\Desktop\HelloWorld\CalibData.clb";
@@ -85,10 +89,11 @@ namespace vision_form
             CenterRow = Convert.ToDouble(sArray[6]);
             CenterColumn = Convert.ToDouble(sArray[7]);
 
+            DistanceMax = Convert.ToDouble(sArray[8]);
 
-            int count = Convert.ToInt32(sArray[8]) * 4 + 8;
+            int count = Convert.ToInt32(sArray[9]) * 4 + 9;
 
-            for (int i = 9; i <= count; )
+            for (int i = 10; i <= count; )
             {
                 in_pixel_column.Append(Convert.ToDouble(sArray[i++]));
                 in_pixel_row.Append(Convert.ToDouble(sArray[i++]));
@@ -170,20 +175,26 @@ namespace vision_form
                         {
                             return true;
                         }
-
-                        Refresh_in();
                     }
+
+                    Refresh_in();
 
                     if (in_pixel_row.Length == 15)
                     {
                         HObject contour;
                         HTuple radius, startPhi, endPhi, pointOrder;
+                        HTuple row = in_pixel_row.TupleSelectRange(9, 14);
+                        HTuple col = in_pixel_column.TupleSelectRange(9, 14);
 
-                        HOperatorSet.GenContourPolygonXld(out contour,
-                            in_pixel_row.TupleSelectRange(9, 14), in_pixel_column.TupleSelectRange(9, 14));
+                        HOperatorSet.GenContourPolygonXld(out contour, row, col);
 
                         HOperatorSet.FitCircleContourXld(contour, "algebraic", -1, 0, 0, 3, 2,
                             out CenterRow, out CenterColumn, out radius, out startPhi, out endPhi, out pointOrder);
+
+                        
+                        HOperatorSet.GenCircleContourXld(out contour, CenterRow, CenterColumn, radius, 0, 6.28318, "positive", 1);
+
+                        HOperatorSet.DistancePc(contour, row, col, out DistanceMin, out DistanceMax);
 
                         HomMat2D.Append(CenterRow);
                         HomMat2D.Append(CenterColumn);
@@ -227,7 +238,7 @@ namespace vision_form
 
             all_parm += XMaxDeviation + "_" + YMaxDeviation + "_";
             all_parm += CenterRow + "_" + CenterColumn + "_";
-            
+            all_parm += DistanceMax + "_";
 
             if (in_pixel_row != null)
             {
@@ -310,6 +321,9 @@ namespace vision_form
 
             CenterRow = 0;
             CenterColumn = 0;
+
+            DistanceMin = 0;
+            DistanceMax = 0;
         }
     }
 }

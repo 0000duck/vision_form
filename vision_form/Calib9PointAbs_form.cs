@@ -17,15 +17,13 @@ namespace vision_form
         HTuple Hwin = null;
         HTuple Hwidth, Hheight;
 
-        private UnitCalib9PointAbs calibData;
-
-
-
+        private UnitCalib9PointAbs calib_data;
+        
         public Calib9PointAbs_form(UnitCalib9PointAbs calib, HObject image)
         {
             InitializeComponent();
 
-            this.calibData = calib;
+            this.calib_data = calib;
             this.image_show = image;
         }
 
@@ -118,12 +116,12 @@ namespace vision_form
 
             
             
-            if (calibData.EnableRotateCenter = chkCalibRC.Checked)
+            if (calib_data.EnableRotateCenter = chkCalibRC.Checked)
             {
-                calibData.AngleRange = Convert.ToInt32(txtAngleRange.Text.Trim());
+                calib_data.AngleRange = Convert.ToInt32(txtAngleRange.Text.Trim());
             }
-            calibData.OffsetXY = Convert.ToInt32(txtOffsetXY.Text.Trim());
-            calibData.CalibDataFileName = txtDir.Text.Trim() + txtName.Text.Trim();
+            calib_data.OffsetXY = Convert.ToInt32(txtOffsetXY.Text.Trim());
+            calib_data.CalibDataFileName = txtDir.Text.Trim() + txtName.Text.Trim();
 
             Close();
         }
@@ -137,36 +135,35 @@ namespace vision_form
         {
             int length = dataGridView1.Rows.Count - 1;
 
-            if (length == 9)
-            {
-                calibData.EnableRotateCenter = false;
-            }
-            else if (length == 15)
-            {
-                calibData.EnableRotateCenter = true;
-            }
-            else
+            if (length != 9 && length != 15)
             {
                 MessageBox.Show("数据量有误");
                 return;
             }
 
-            calibData.ClearData();
+            calib_data.ClearData();
 
             for (int i = 0; i < length; i++)
             {
-                calibData.in_pixel_column.Append(Convert.ToDouble(dataGridView1.Rows[i].Cells[1].Value));
-                calibData.in_pixel_row.Append(Convert.ToDouble(dataGridView1.Rows[i].Cells[2].Value));
-                calibData.in_world_x.Append(Convert.ToDouble(dataGridView1.Rows[i].Cells[3].Value));
-                calibData.in_world_y.Append(Convert.ToDouble(dataGridView1.Rows[i].Cells[4].Value));
+                calib_data.in_pixel_column.Append(Convert.ToDouble(dataGridView1.Rows[i].Cells[1].Value));
+                calib_data.in_pixel_row.Append(Convert.ToDouble(dataGridView1.Rows[i].Cells[2].Value));
+                calib_data.in_world_x.Append(Convert.ToDouble(dataGridView1.Rows[i].Cells[3].Value));
+                calib_data.in_world_y.Append(Convert.ToDouble(dataGridView1.Rows[i].Cells[4].Value));
 
+                if (i == 8)
+                {
+                    calib_data.PointCount = 9;
+                    calib_data.process(null, null);
+                }
+
+                if (chkCalibRC.Checked && i == 14)
+                {
+                    calib_data.PointCount = 16;
+                    calib_data.EnableRotateCenter = true;
+                    calib_data.process(null, null);
+                }
             }
-
-            calibData.PointCount = 9;
-            calibData.process(null, null);
-            calibData.PointCount = 16;
-            calibData.process(null, null);
-
+            
             load_parm();
         }
 
@@ -174,22 +171,22 @@ namespace vision_form
         {
             dataGridView1.Rows.Clear();
 
-            int length = calibData.in_pixel_row.Length;
+            int length = calib_data.in_pixel_row.Length;
             for (int i = 0; i < length; i++)
             {
                 int row = dataGridView1.Rows.Add();
 
                 dataGridView1.Rows[row].Cells[0].Value = row + 1;
-                dataGridView1.Rows[row].Cells[1].Value = calibData.in_pixel_column.ToDArr()[i];
-                dataGridView1.Rows[row].Cells[2].Value = calibData.in_pixel_row.ToDArr()[i];
-                dataGridView1.Rows[row].Cells[3].Value = calibData.in_world_x.ToDArr()[i];
-                dataGridView1.Rows[row].Cells[4].Value = calibData.in_world_y.ToDArr()[i];
+                dataGridView1.Rows[row].Cells[1].Value = calib_data.in_pixel_column.ToDArr()[i];
+                dataGridView1.Rows[row].Cells[2].Value = calib_data.in_pixel_row.ToDArr()[i];
+                dataGridView1.Rows[row].Cells[3].Value = calib_data.in_world_x.ToDArr()[i];
+                dataGridView1.Rows[row].Cells[4].Value = calib_data.in_world_y.ToDArr()[i];
 
             }
             
-            txtOffsetXY.Text = calibData.OffsetXY.ToString();
-            txtAngleRange.Text = calibData.AngleRange.ToString();
-            chkCalibRC.Checked = calibData.EnableRotateCenter;
+            txtOffsetXY.Text = calib_data.OffsetXY.ToString();
+            txtAngleRange.Text = calib_data.AngleRange.ToString();
+            chkCalibRC.Checked = calib_data.EnableRotateCenter;
 
             if (chkCalibRC.Checked)
             {
@@ -200,27 +197,32 @@ namespace vision_form
                 txtAngleRange.Enabled = false;
             }
 
-            int index = calibData.CalibDataFileName.LastIndexOf("\\");
+            int index = calib_data.CalibDataFileName.LastIndexOf("\\");
 
             if (index >= 0)
             {
-                txtName.Text = calibData.CalibDataFileName.Substring(index + 1);
-                txtDir.Text = calibData.CalibDataFileName.Substring(0, index + 1);
+                txtName.Text = calib_data.CalibDataFileName.Substring(index + 1);
+                txtDir.Text = calib_data.CalibDataFileName.Substring(0, index + 1);
             }
             else
             {
-                txtName.Text = calibData.CalibDataFileName;
+                txtName.Text = calib_data.CalibDataFileName;
                 txtDir.Text = "";
             }
 
-            double[] homMat2D = calibData.HomMat2D.ToDArr();
+
+
+            double[] homMat2D = calib_data.HomMat2D.ToDArr();
 
             labHomMat2D.Text = "HomMat2D:\r\n" + homMat2D[0] + "  " + homMat2D[1] + "  " + homMat2D[2] + "\r\n" +
-                homMat2D[3] + "  " + homMat2D[4] + "  " + homMat2D[5] + "\r\n" + "0  0  1";
+            homMat2D[3] + "  " + homMat2D[4] + "  " + homMat2D[5] + "\r\n" + "0  0  1";
+            
+            labMaxDeviation.Text = "最大偏差(x, y)：(" + calib_data.XMaxDeviation + ", " + calib_data.YMaxDeviation + ")";
 
-            labMaxDeviation.Text = "最大偏差(x, y)：(" + calibData.XMaxDeviation + ", " + calibData.YMaxDeviation + ")";
+            labRotateCenter.Text = "旋转中心(row, column)：(" + calib_data.CenterRow + ", " + calib_data.CenterColumn + ")";
 
-            labRotateCenter.Text = "旋转中心(row, column)：(" + calibData.CenterRow + ", " + calibData.CenterColumn + ")";
+            labDistMax.Text = "半径偏差(pixel)：" + calib_data.DistanceMax;
+
         }
     }
 }

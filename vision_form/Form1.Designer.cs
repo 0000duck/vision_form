@@ -87,7 +87,9 @@
             "Find_line",
             "Find_circle",
             "IntersectionLL",
-            "Calib9PointAbs"});
+            "Calib9PointAbs",
+            "Random",
+            "ImageFiles"});
             this.comboBox1.Location = new System.Drawing.Point(24, 68);
             this.comboBox1.Name = "comboBox1";
             this.comboBox1.Size = new System.Drawing.Size(164, 20);
