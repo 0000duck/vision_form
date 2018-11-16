@@ -123,7 +123,7 @@ namespace vision_form
 
 
         /// <summary>
-        /// 相对坐标9点标定
+        /// 相对坐标9点标定，必须要有且只能有9个图像坐标
         /// </summary>
         /// <param name="row"></param>
         /// <param name="column"></param>
@@ -133,8 +133,13 @@ namespace vision_form
             try
             {
                 int length = row.Length;
-                int count = 0;
 
+                if (length != 9)
+                {
+                    return false;
+                }
+
+                int count = 0;
                 double[] px = new double[length];
                 double[] py = new double[length];
                 double[] qx = new double[length];
@@ -179,7 +184,6 @@ namespace vision_form
 
                 PixelRatioColumn = kxMean;
                 PixelRatioRow = kyMean;
-
                 PixelRatioDevCol = kxDev;
                 PixelRatioDevRow = kyDev;
 

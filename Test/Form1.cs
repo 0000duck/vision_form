@@ -13,7 +13,9 @@ namespace Test
 {
     public partial class Form1 : Form
     {
-        Calibration calib = new Calibration("MainCamera");
+        Calibration calib1 = new Calibration("MainCamera");
+        Calibration calib2 = new Calibration("UpDownCalib");
+        Calibration calib3 = new Calibration("SideCalib");
 
         public Form1()
         {
@@ -22,12 +24,22 @@ namespace Test
 
         private void button1_Click(object sender, EventArgs e)
         {
-            calib.ShowDialog();
+            calib1.ShowDialog();
         }
 
         private void button2_Click(object sender, EventArgs e)
         {
-            calib.SaveConfig();
+            calib1.SaveConfig();
+        }
+
+        private void button3_Click(object sender, EventArgs e)
+        {
+            calib2.ShowDialog();
+        }
+
+        private void button4_Click(object sender, EventArgs e)
+        {
+            calib3.ShowDialog();
         }
     }
 }
