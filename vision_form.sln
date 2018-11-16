@@ -1,9 +1,13 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 14
-VisualStudioVersion = 14.0.23107.0
+VisualStudioVersion = 14.0.25420.1
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "vision_form", "vision_form\vision_form.csproj", "{FE784A9A-4801-451F-BA2D-E4E22A81FFBB}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Calibration", "Calibration\Calibration.csproj", "{A5181CBB-0A74-4F5E-B3CD-139CB8DF2238}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Test", "Test\Test.csproj", "{88A9BC70-A695-4A63-9F59-E557C61A1BBB}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -15,6 +19,14 @@ Global
 		{FE784A9A-4801-451F-BA2D-E4E22A81FFBB}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{FE784A9A-4801-451F-BA2D-E4E22A81FFBB}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{FE784A9A-4801-451F-BA2D-E4E22A81FFBB}.Release|Any CPU.Build.0 = Release|Any CPU
+		{A5181CBB-0A74-4F5E-B3CD-139CB8DF2238}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{A5181CBB-0A74-4F5E-B3CD-139CB8DF2238}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{A5181CBB-0A74-4F5E-B3CD-139CB8DF2238}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{A5181CBB-0A74-4F5E-B3CD-139CB8DF2238}.Release|Any CPU.Build.0 = Release|Any CPU
+		{88A9BC70-A695-4A63-9F59-E557C61A1BBB}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{88A9BC70-A695-4A63-9F59-E557C61A1BBB}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{88A9BC70-A695-4A63-9F59-E557C61A1BBB}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{88A9BC70-A695-4A63-9F59-E557C61A1BBB}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
