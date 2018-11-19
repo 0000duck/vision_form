@@ -14,21 +14,19 @@ namespace vision_form
         public double RotationStep = 1000;
         public double TranslationStep = 3000;
 
-        // 旋转中心和数据偏差
+        // 旋转中心和误差
         public double CenterRow = 0;
         public double CenterColumn = 0;
-        public double CenterDev = 0;
+        public double CenterError = 0;
 
-        // 仿射变换矩阵和偏差
+        // 仿射变换矩阵和误差
         public HTuple HomMat2D = new HTuple(1, 0, 0, 0, 1, 0);
-        public double HomMat2DDevX = 0;
-        public double HomMat2DDevY = 0;
+        public double HomMat2DError = 0;
 
-        // 像素比和比例偏差
+        // 像素比和误差
         public double PixelRatioColumn = 0;
         public double PixelRatioRow = 0;
-        public double PixelRatioDevCol = 0;
-        public double PixelRatioDevRow = 0;
+        public double PixelRatioError = 0;
 
         // 文件名称
         private string filename = "Calibration.xml";
@@ -74,7 +72,7 @@ namespace vision_form
 
                 CenterRow = r;
                 CenterColumn = c;
-                CenterDev = distanceMax;
+                CenterError = distanceMax;
 
                 SaveConfig();
 
@@ -108,8 +106,10 @@ namespace vision_form
                 HOperatorSet.VectorToHomMat2d(column, row, x, y, out HomMat2D);
                 HOperatorSet.AffineTransPoint2d(HomMat2D, column, row, out qx, out qy);
 
-                HomMat2DDevX = qx.TupleSub(x).TupleAbs().TupleMax();
-                HomMat2DDevY = qy.TupleSub(y).TupleAbs().TupleMax();
+                double ex = qx.TupleSub(x).TupleAbs().TupleMax();
+                double ey = qy.TupleSub(y).TupleAbs().TupleMax();
+
+                HomMat2DError = ex > ey ? ex : ey;
 
                 SaveConfig();
 
@@ -139,53 +139,51 @@ namespace vision_form
                     return false;
                 }
 
+                // 求有效的对应坐标的像素比
                 int count = 0;
-                double[] px = new double[length];
-                double[] py = new double[length];
-                double[] qx = new double[length];
-                double[] qy = new double[length];
                 double[] kx = new double[length];
                 double[] ky = new double[length];
 
                 for (int i = 0; i < length; i++)
                 {
-                    px[i] = column[i] - column[4];
-                    py[i] = row[i] - row[4];
-                    qx[i] = (i % 3 - 1) * TranslationStep;
-                    qy[i] = (i / 3 - 1) * TranslationStep;
+                    double px = column[i] - column[4];
+                    double py = row[i] - row[4];
+                    double qx = (i % 3 - 1) * TranslationStep;
+                    double qy = (i / 3 - 1) * TranslationStep;
 
-                    if (px[i] != 0 && py[i] != 0 && qx[i] != 0 && qy[i] != 0)
+                    if (px != 0 && py != 0 && qx != 0 && qy != 0)
                     {
-                        kx[i] = qx[i] / px[i];
-                        ky[i] = qy[i] / py[i];
+                        kx[i] = Math.Abs(qx / px);
+                        ky[i] = Math.Abs(qy / py);
                         count++;
                     }
                 }
 
+                // 求平均像素比和误差
                 double kxMean = kx.Sum() / count;
                 double kyMean = ky.Sum() / count;
-                double kxDev = 0;
-                double kyDev = 0;
+                double ex = 0;
+                double ey = 0;
 
                 for (int i = 0; i < count; i++)
                 {
                     double value = Math.Abs(kx[i] - kxMean);
-                    if (kxDev < value)
+                    if (ex < value)
                     {
-                        kxDev = value;
+                        ex = value;
                     }
 
                     value = Math.Abs(ky[i] - kyMean);
-                    if (kyDev < value)
+                    if (ey < value)
                     {
-                        kyDev = value;
+                        ey = value;
                     }
                 }
 
+                // 结果输出
                 PixelRatioColumn = kxMean;
                 PixelRatioRow = kyMean;
-                PixelRatioDevCol = kxDev;
-                PixelRatioDevRow = kyDev;
+                PixelRatioError = ex > ey ? ex : ey;
 
                 SaveConfig();
 
@@ -221,7 +219,7 @@ namespace vision_form
             }
 
             AppendCalibNode(doc, unit);
-            string xpath = "//unit[@name=\"" + CalibName + "\"]";
+            string xpath = "/Calibration/unit[@name=\"" + CalibName + "\"]";
             XmlNode oldNode = root.SelectSingleNode(xpath);
             if (oldNode == null)
             {
@@ -301,6 +299,7 @@ namespace vision_form
                 object value = null;
                 string strValue = ((XmlElement)node).GetAttribute("value");
 
+                // 类型转换
                 TypeConverter converter = TypeDescriptor.GetConverter(item.FieldType);
                 if (converter.CanConvertFrom(strValue.GetType()))
                 {
@@ -321,6 +320,7 @@ namespace vision_form
                 }
                 else
                 {
+                    // 解析无法进行类型转换的类型
                     if (((XmlElement)node).GetAttribute("name") == nameof(HomMat2D))
                     {
                         HomMat2D = new HTuple();

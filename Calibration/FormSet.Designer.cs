@@ -99,7 +99,7 @@
             // 
             this.butCancel.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Right)));
             this.butCancel.DialogResult = System.Windows.Forms.DialogResult.Cancel;
-            this.butCancel.Location = new System.Drawing.Point(279, 218);
+            this.butCancel.Location = new System.Drawing.Point(279, 220);
             this.butCancel.Margin = new System.Windows.Forms.Padding(3, 4, 3, 4);
             this.butCancel.Name = "butCancel";
             this.butCancel.Size = new System.Drawing.Size(93, 31);
@@ -111,7 +111,7 @@
             // butOK
             // 
             this.butOK.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Right)));
-            this.butOK.Location = new System.Drawing.Point(180, 218);
+            this.butOK.Location = new System.Drawing.Point(180, 220);
             this.butOK.Margin = new System.Windows.Forms.Padding(3, 4, 3, 4);
             this.butOK.Name = "butOK";
             this.butOK.Size = new System.Drawing.Size(93, 31);
@@ -126,12 +126,13 @@
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 12F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.CancelButton = this.butCancel;
-            this.ClientSize = new System.Drawing.Size(384, 262);
+            this.ClientSize = new System.Drawing.Size(384, 264);
             this.Controls.Add(this.butCancel);
             this.Controls.Add(this.butOK);
             this.Controls.Add(this.tabControl1);
             this.FormBorderStyle = System.Windows.Forms.FormBorderStyle.FixedToolWindow;
             this.Name = "FormSet";
+            this.StartPosition = System.Windows.Forms.FormStartPosition.CenterScreen;
             this.Text = "标定";
             this.Load += new System.EventHandler(this.FormSet_Load);
             this.tabPage1.ResumeLayout(false);
