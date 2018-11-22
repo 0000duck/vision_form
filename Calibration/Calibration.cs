@@ -8,6 +8,22 @@ using HalconDotNet;
 
 namespace vision_form
 {
+    public enum CalibSetup
+    {
+        calibration_object,
+        hand_eye_moving_cam, hand_eye_stationary_cam,
+        hand_eye_scara_moving_cam, hand_eye_scara_stationary_cam
+    }
+
+    public enum CameraType
+    {
+        area_scan_division, area_scan_telecentric_division,
+        area_scan_tilt_division, area_scan_telecentric_tilt_division,
+        area_scan_polynomial, area_scan_telecentric_polynomial,
+        area_scan_tilt_polynomial, area_scan_telecentric_tilt_polynomial,
+        line_scan
+    }
+
     public class Calibration
     {
         // 旋转步长和平移步长
@@ -194,6 +210,118 @@ namespace vision_form
                 return false;
             }
         }
+
+
+
+
+
+        public bool CalibHandEye(CalibSetup calibSetup, CameraType cameraType, HTuple cameraParam, HTuple calibObjDescr, 
+            HObject[] images, HTuple[] toolInBasePose, HObject imageZ = null, params HTuple[] toolInBasePoseZ)
+        {
+            string setup = Enum.GetName(typeof(Calibration), calibSetup);
+            string param = Enum.GetName(typeof(CameraType), cameraType);
+
+            // 创建halcon标定数据模型，并设置相机和标定对象
+            HTuple calibDataID;
+            HOperatorSet.CreateCalibData(setup, 1, 1, out calibDataID);
+            HOperatorSet.SetCalibDataCamParam(calibDataID, 0, param, cameraParam);
+            HOperatorSet.SetCalibDataCalibObject(calibDataID, 0, calibObjDescr);
+            HOperatorSet.SetCalibData(calibDataID, "model", "general", "optimization_method", "nonlinear");
+
+            if (images.Length != toolInBasePose.Length || images.Length < 10)
+            {
+                return false;
+            }
+
+            // 在标定数据模型中设置数据
+            int length = images.Length;
+            for (int i = 0; i < length; i++)
+            {
+                HOperatorSet.FindCalibObject(images[i], calibDataID, 0, 0, i, null, null);
+                HOperatorSet.SetCalibData(calibDataID, "tool", i, "tool_in_base_pose", toolInBasePose[i]);
+            }
+
+            // 执行手眼标定
+            HTuple errors;
+            HOperatorSet.CalibrateHandEye(calibDataID, out errors);
+
+            // 获取标定数据模型中的参数
+            HTuple internalParam, toolInCamPose, objInBasePose, baseInCamPose, objInToolPose;
+            switch (calibSetup)
+            {
+                case CalibSetup.calibration_object:
+                    HOperatorSet.GetCalibData(calibDataID, "camera", 0, "params", out internalParam);
+                    break;
+
+                case CalibSetup.hand_eye_moving_cam:
+                    HOperatorSet.GetCalibData(calibDataID, "camera", 0, "params", out internalParam);
+                    HOperatorSet.GetCalibData(calibDataID, "camera", 0, "tool_in_cam_pose", out toolInCamPose);
+                    HOperatorSet.GetCalibData(calibDataID, "calib_obj", 0, "obj_in_base_pose", out objInBasePose);
+                    break;
+
+                case CalibSetup.hand_eye_stationary_cam:
+                    HOperatorSet.GetCalibData(calibDataID, "camera", 0, "params", out internalParam);
+                    HOperatorSet.GetCalibData(calibDataID, "camera", 0, "base_in_cam_pose", out baseInCamPose);
+                    HOperatorSet.GetCalibData(calibDataID, "calib_obj", 0, "obj_in_tool_pose", out objInToolPose);
+                    break;
+
+                case CalibSetup.hand_eye_scara_moving_cam:
+                    HOperatorSet.GetCalibData(calibDataID, "camera", 0, "tool_in_cam_pose", out toolInCamPose);
+
+                    // 获取标定板在相机坐标系中的位置
+                    HTuple ID, objInCamPose;
+                    HOperatorSet.CreateCalibData("calibration_object", 1, 1, out ID);
+                    HOperatorSet.SetCalibDataCamParam(ID, 0, param, cameraParam);
+                    HOperatorSet.SetCalibDataCalibObject(ID, 0, calibObjDescr);
+                    HOperatorSet.FindCalibObject(imageZ, ID, 0, 0, 0, null, null);
+                    HOperatorSet.GetCalibDataObservPose(ID, 0, 0, 0, out objInCamPose);
+                    HOperatorSet.ClearCalibData(ID);
+
+                    // 获取标定板在tool1中的位置，获取tool2在tool1中的位置，tool1为获取图像的位置，tool2为工具在标定板原点的位置
+                    HTuple camInToolPose, objInTool1Pose, baseInTool1Pose, tool2InTool1Pose;
+                    HOperatorSet.PoseInvert(toolInCamPose, out camInToolPose);
+                    HOperatorSet.PoseCompose(camInToolPose, objInCamPose, out objInTool1Pose);
+                    HOperatorSet.PoseInvert(toolInBasePoseZ[0], out baseInTool1Pose);
+                    HOperatorSet.PoseCompose(baseInTool1Pose, toolInBasePoseZ[1], out tool2InTool1Pose);
+
+                    // 确定Z轴位置
+                    HTuple ZCorrection = objInTool1Pose[2] - tool2InTool1Pose[2];
+                    HOperatorSet.SetOriginPose(objInCamPose, 0, 0, ZCorrection, out objInCamPose);
+                    break;
+
+                case CalibSetup.hand_eye_scara_stationary_cam:
+                    HOperatorSet.GetCalibData(calibDataID, "camera", 0, "base_in_cam_pose", out baseInCamPose);
+
+                    // 获取标定板在相机坐标系中的位置
+                    HOperatorSet.CreateCalibData("calibration_object", 1, 1, out ID);
+                    HOperatorSet.SetCalibDataCamParam(ID, 0, param, cameraParam);
+                    HOperatorSet.SetCalibDataCalibObject(ID, 0, calibObjDescr);
+                    HOperatorSet.FindCalibObject(imageZ, ID, 0, 0, 0, null, null);
+                    HOperatorSet.GetCalibDataObservPose(ID, 0, 0, 0, out objInCamPose);
+                    HOperatorSet.ClearCalibData(ID);
+
+                    // 获取标定板在基坐标中的位置
+                    HTuple camInBasePose;
+                    HOperatorSet.PoseInvert(baseInCamPose, out camInBasePose);
+                    HOperatorSet.PoseCompose(camInBasePose, objInCamPose, out objInBasePose);
+
+                    // 确定Z轴位置
+                    ZCorrection = objInBasePose[2] - toolInBasePoseZ[0][2];
+                    HOperatorSet.SetOriginPose(camInBasePose, 0, 0, ZCorrection, out camInBasePose);
+                    break;
+
+                default:
+                    break;
+            }
+
+            // 释放标定模型数据的内存
+            HOperatorSet.ClearCalibData(calibDataID);
+
+            return true;
+        }
+
+
+
 
 
         /// <summary>
