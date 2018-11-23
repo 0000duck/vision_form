@@ -1,7 +1,6 @@
 ﻿using System;
 using System.ComponentModel;
 using System.IO;
-using System.Linq;
 using System.Reflection;
 using System.Xml;
 using HalconDotNet;
@@ -23,13 +22,11 @@ namespace vision_form
         public HTuple HomMat2D = new HTuple(1, 0, 0, 0, 1, 0);
         public double HomMat2DError = 0;
 
-        // 像素比和误差
-        public double PixelRatioColumn = 0;
-        public double PixelRatioRow = 0;
-        public double PixelRatioError = 0;
+        public bool IsRelative = false;
 
         // 文件名称
-        private string filename = "Calibration.xml";
+        private readonly string filename = "Calibration.xml";
+
 
         // 标定数据名称
         public string CalibName { get; set; } = "default";
@@ -86,29 +83,52 @@ namespace vision_form
 
 
         /// <summary>
-        /// 绝对坐标9点标定
+        /// 9点标定
         /// </summary>
-        /// <param name="row"></param>
-        /// <param name="column"></param>
-        /// <param name="x"></param>
-        /// <param name="y"></param>
+        /// <param name="row">像素坐标</param>
+        /// <param name="column">像素坐标</param>
+        /// <param name="x">世界坐标，相对坐标置null</param>
+        /// <param name="y">世界坐标，相对坐标置null</param>
         /// <returns></returns>
-        public bool CalibNinePointAbsolute(double[] row, double[] column, double[] x, double[] y)
+        public bool CalibNinePoint(double[] row, double[] column, double[] x = null, double[] y = null)
         {
             try
             {
-                if (row.Length < 3 || column.Length < 3 || x.Length < 3 || y.Length < 3)
+                if ((row.Length < 3 || column.Length < 3) || (x == null && row.Length != 9))
                 {
                     return false;
                 }
 
-                HTuple qx, qy;
-                HOperatorSet.VectorToHomMat2d(column, row, x, y, out HomMat2D);
-                HOperatorSet.AffineTransPoint2d(HomMat2D, column, row, out qx, out qy);
+                IsRelative = false;
 
+                if (x == null || y == null)
+                {
+                    IsRelative = true;
+
+                    double[] wx = new double[9];
+                    double[] wy = new double[9];
+
+                    for (int i = 0; i < 9; i++)
+                    {
+                        row[i] = row[i] - row[4];
+                        column[i] = column[i] - column[4];
+                        wx[i] = (i % 3 - 1) * TranslationStep;
+                        wy[i] = (i / 3 - 1) * TranslationStep;
+                    }
+
+                    x = wx;
+                    y = wy;
+                }
+
+
+                // 获取矩阵
+                HOperatorSet.VectorToHomMat2d(row, column, x, y, out HomMat2D);
+
+                // 获取最大误差
+                HTuple qx, qy;
+                HOperatorSet.AffineTransPoint2d(HomMat2D, row, column, out qx, out qy);
                 double ex = qx.TupleSub(x).TupleAbs().TupleMax();
                 double ey = qy.TupleSub(y).TupleAbs().TupleMax();
-
                 HomMat2DError = ex > ey ? ex : ey;
 
                 SaveConfig();
@@ -122,78 +142,124 @@ namespace vision_form
         }
 
 
+
+
+
         /// <summary>
-        /// 相对坐标9点标定，必须要有且只能有9个图像坐标
+        /// 获取旋转角度后的位置
         /// </summary>
         /// <param name="row"></param>
         /// <param name="column"></param>
-        /// <returns></returns>
-        public bool CalibNinePointRelative(double[] row, double[] column)
+        /// <param name="rotateAngle"></param>
+        /// <param name="rotatedRow"></param>
+        /// <param name="rotatedColumn"></param>
+        public void GetRotatedPose(HTuple row, HTuple column, HTuple rotateAngle,
+            out HTuple rotatedRow, out HTuple rotatedColumn)
         {
             try
             {
-                int length = row.Length;
+                HTuple homMat2DIdentity, homMat2DRotate;
+                HTuple rad = rotateAngle.TupleRad();
 
-                if (length != 9)
-                {
-                    return false;
-                }
-
-                // 求有效的对应坐标的像素比
-                int count = 0;
-                double[] kx = new double[length];
-                double[] ky = new double[length];
-
-                for (int i = 0; i < length; i++)
-                {
-                    double px = column[i] - column[4];
-                    double py = row[i] - row[4];
-                    double qx = (i % 3 - 1) * TranslationStep;
-                    double qy = (i / 3 - 1) * TranslationStep;
-
-                    if (px != 0 && py != 0 && qx != 0 && qy != 0)
-                    {
-                        kx[i] = Math.Abs(qx / px);
-                        ky[i] = Math.Abs(qy / py);
-                        count++;
-                    }
-                }
-
-                // 求平均像素比和误差
-                double kxMean = kx.Sum() / count;
-                double kyMean = ky.Sum() / count;
-                double ex = 0;
-                double ey = 0;
-
-                for (int i = 0; i < count; i++)
-                {
-                    double value = Math.Abs(kx[i] - kxMean);
-                    if (ex < value)
-                    {
-                        ex = value;
-                    }
-
-                    value = Math.Abs(ky[i] - kyMean);
-                    if (ey < value)
-                    {
-                        ey = value;
-                    }
-                }
-
-                // 结果输出
-                PixelRatioColumn = kxMean;
-                PixelRatioRow = kyMean;
-                PixelRatioError = ex > ey ? ex : ey;
-
-                SaveConfig();
-
-                return true;
+                HOperatorSet.HomMat2dIdentity(out homMat2DIdentity);
+                HOperatorSet.HomMat2dRotate(homMat2DIdentity, rad, CenterRow, CenterColumn, out homMat2DRotate);
+                HOperatorSet.AffineTransPoint2d(homMat2DRotate, row, column, out rotatedRow, out rotatedColumn);
             }
             catch (Exception)
             {
-                return false;
+                rotatedRow = rotatedColumn = null;
             }
         }
+
+
+        /// <summary>
+        /// 获取旋转角度后的位置
+        /// </summary>
+        /// <param name="row"></param>
+        /// <param name="column"></param>
+        /// <param name="startAngle"></param>
+        /// <param name="endAngle"></param>
+        /// <param name="rotatedRow"></param>
+        /// <param name="rotatedColumn"></param>
+        public void GetRotatedPose(HTuple row, HTuple column, HTuple startAngle, HTuple endAngle,
+            out HTuple rotatedRow, out HTuple rotatedColumn)
+        {
+            try
+            {
+                HTuple homMat2DIdentity, homMat2DRotate;
+                HTuple rad = endAngle.TupleRad() - startAngle.TupleRad();
+
+                HOperatorSet.HomMat2dIdentity(out homMat2DIdentity);
+                HOperatorSet.HomMat2dRotate(homMat2DIdentity, rad, CenterRow, CenterColumn, out homMat2DRotate);
+                HOperatorSet.AffineTransPoint2d(homMat2DRotate, row, column, out rotatedRow, out rotatedColumn);
+            }
+            catch (Exception)
+            {
+                rotatedRow = rotatedColumn = null;
+            }
+        }
+
+
+        /// <summary>
+        /// 图像坐标系到世界坐标系
+        /// </summary>
+        /// <param name="row"></param>
+        /// <param name="column"></param>
+        /// <param name="x"></param>
+        /// <param name="y"></param>
+        public void ImageToWorldPose(HTuple row, HTuple column, out HTuple x, out HTuple y)
+        {
+            HOperatorSet.AffineTransPoint2d(HomMat2D, row, column, out x, out y);
+        }
+
+
+        /// <summary>
+        /// 获取世界坐标系位置
+        /// </summary>
+        /// <param name="startRow">当前位置Row</param>
+        /// <param name="startColumn">当前位置Column</param>
+        /// <param name="startAngle">当前位置角度，无角度置null</param>
+        /// <param name="endRow">相对坐标有效，绝对坐标置null</param>
+        /// <param name="endColumn">相对坐标有效，绝对坐标置null</param>
+        /// <param name="endAngle">目标角度，无角度置null</param>
+        /// <param name="x">世界坐标系X</param>
+        /// <param name="y">世界坐标系Y</param>
+        /// <param name="angle">相对角度</param>
+        public void GetWorldPose(HTuple startRow, HTuple startColumn, HTuple startAngle,
+                                HTuple endRow, HTuple endColumn, HTuple endAngle,
+                                out HTuple x, out HTuple y, out HTuple angle)
+        {
+            try
+            {
+                HTuple row, column;
+                GetRotatedPose(startRow, startColumn, startAngle, endAngle, out row, out column);
+
+                if (IsRelative)
+                {
+                    row = endRow - row;
+                    column = endColumn - column;
+                }
+
+                HOperatorSet.AffineTransPoint2d(HomMat2D, row, column, out x, out y);
+
+                if (endAngle != null && startAngle != null)
+                {
+                    angle = endAngle - startAngle;
+                }
+                else
+                {
+                    angle = null;
+                }
+
+            }
+            catch (Exception)
+            {
+                x = y = angle = null;
+            }
+        }
+
+
+
 
 
         /// <summary>
