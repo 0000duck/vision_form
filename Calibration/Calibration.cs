@@ -69,7 +69,7 @@ namespace vision_form
 
                 CenterRow = r;
                 CenterColumn = c;
-                CenterError = distanceMax;
+                CenterError = distanceMin.TupleMax();
 
                 SaveConfig();
 
@@ -105,17 +105,21 @@ namespace vision_form
                 {
                     IsRelative = true;
 
+                    double[] px = new double[9];
+                    double[] py = new double[9];
                     double[] wx = new double[9];
                     double[] wy = new double[9];
 
                     for (int i = 0; i < 9; i++)
                     {
-                        row[i] = row[i] - row[4];
-                        column[i] = column[i] - column[4];
+                        px[i] = row[i] - row[4];
+                        py[i] = column[i] - column[4];
                         wx[i] = (i % 3 - 1) * TranslationStep;
                         wy[i] = (i / 3 - 1) * TranslationStep;
                     }
 
+                    row = px;
+                    column = py;
                     x = wx;
                     y = wy;
                 }
@@ -201,6 +205,36 @@ namespace vision_form
 
 
         /// <summary>
+        /// 获取指定旋转中心旋转后的位置
+        /// </summary>
+        /// <param name="centerRow">旋转中心Row</param>
+        /// <param name="centerColumn">旋转中心Column</param>
+        /// <param name="row">当前位置Row</param>
+        /// <param name="column">当前位置Column</param>
+        /// <param name="startAngle">当前角度</param>
+        /// <param name="endAngle">旋转后的角度</param>
+        /// <param name="rotatedRow">旋转后的位置Row</param>
+        /// <param name="rotatedColumn">旋转后的位置Column</param>
+        public void GetRotatedPose(HTuple centerRow, HTuple centerColumn, HTuple row, HTuple column,
+            HTuple startAngle, HTuple endAngle, out HTuple rotatedRow, out HTuple rotatedColumn)
+        {
+            try
+            {
+                HTuple homMat2DIdentity, homMat2DRotate;
+                HTuple rad = endAngle.TupleRad() - startAngle.TupleRad();
+
+                HOperatorSet.HomMat2dIdentity(out homMat2DIdentity);
+                HOperatorSet.HomMat2dRotate(homMat2DIdentity, rad, centerRow, centerColumn, out homMat2DRotate);
+                HOperatorSet.AffineTransPoint2d(homMat2DRotate, row, column, out rotatedRow, out rotatedColumn);
+            }
+            catch (Exception)
+            {
+                rotatedRow = rotatedColumn = null;
+            }
+        }
+
+
+        /// <summary>
         /// 图像坐标系到世界坐标系
         /// </summary>
         /// <param name="row"></param>
@@ -214,14 +248,28 @@ namespace vision_form
 
 
         /// <summary>
+        /// 获取通过指定矩阵变换后的世界坐标
+        /// </summary>
+        /// <param name="homMat2D">矩阵</param>
+        /// <param name="row"></param>
+        /// <param name="column"></param>
+        /// <param name="x"></param>
+        /// <param name="y"></param>
+        public void ImageToWorldPose(HTuple homMat2D, HTuple row, HTuple column, out HTuple x, out HTuple y)
+        {
+            HOperatorSet.AffineTransPoint2d(homMat2D, row, column, out x, out y);
+        }
+
+
+        /// <summary>
         /// 获取世界坐标系位置
         /// </summary>
         /// <param name="startRow">当前位置Row</param>
         /// <param name="startColumn">当前位置Column</param>
-        /// <param name="startAngle">当前位置角度，无角度置null</param>
+        /// <param name="startAngle">当前角度</param>
         /// <param name="endRow">相对坐标有效，绝对坐标置null</param>
         /// <param name="endColumn">相对坐标有效，绝对坐标置null</param>
-        /// <param name="endAngle">目标角度，无角度置null</param>
+        /// <param name="endAngle">目标角度</param>
         /// <param name="x">世界坐标系X</param>
         /// <param name="y">世界坐标系Y</param>
         /// <param name="angle">相对角度</param>
@@ -233,6 +281,7 @@ namespace vision_form
             {
                 HTuple row, column;
                 GetRotatedPose(startRow, startColumn, startAngle, endAngle, out row, out column);
+                angle = endAngle - startAngle;
 
                 if (IsRelative)
                 {
@@ -242,14 +291,47 @@ namespace vision_form
 
                 HOperatorSet.AffineTransPoint2d(HomMat2D, row, column, out x, out y);
 
-                if (endAngle != null && startAngle != null)
+            }
+            catch (Exception)
+            {
+                x = y = angle = null;
+            }
+        }
+
+
+        /// <summary>
+        /// 通过指定的矩阵和旋转中心获取世界坐标
+        /// </summary>
+        /// <param name="homMat2D"></param>
+        /// <param name="centerRow"></param>
+        /// <param name="centerColumn"></param>
+        /// <param name="startRow"></param>
+        /// <param name="startColumn"></param>
+        /// <param name="startAngle"></param>
+        /// <param name="endRow"></param>
+        /// <param name="endColumn"></param>
+        /// <param name="endAngle"></param>
+        /// <param name="x"></param>
+        /// <param name="y"></param>
+        /// <param name="angle"></param>
+        public void GetWorldPose(HTuple homMat2D, HTuple centerRow, HTuple centerColumn,
+                                HTuple startRow, HTuple startColumn, HTuple startAngle,
+                                HTuple endRow, HTuple endColumn, HTuple endAngle,
+                                out HTuple x, out HTuple y, out HTuple angle)
+        {
+            try
+            {
+                HTuple row, column;
+                GetRotatedPose(centerRow, centerColumn, startRow, startColumn, startAngle, endAngle, out row, out column);
+                angle = endAngle - startAngle;
+
+                if (IsRelative)
                 {
-                    angle = endAngle - startAngle;
+                    row = endRow - row;
+                    column = endColumn - column;
                 }
-                else
-                {
-                    angle = null;
-                }
+
+                HOperatorSet.AffineTransPoint2d(homMat2D, row, column, out x, out y);
 
             }
             catch (Exception)
@@ -257,6 +339,7 @@ namespace vision_form
                 x = y = angle = null;
             }
         }
+
 
 
 
